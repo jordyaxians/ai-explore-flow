@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronUp, Home } from 'lucide-react';
+import { ChevronUp, Home, X, BookOpen, Code } from 'lucide-react';
 import { TopicCard } from './TopicCard';
 import { aiTopics } from '../data/aiTopics';
 import { cn } from '@/lib/utils';
@@ -16,13 +16,23 @@ export const AIExplorer = () => {
     { id: 'root', title: 'AI Explorer' }
   ]);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
 
   const handleTopicClick = (topicId: string, topicTitle: string) => {
+    const topicData = aiTopics[topicId];
+    
+    // If topic has no subtopics, expand it instead of navigating
+    if (!topicData?.subtopics || topicData.subtopics.length === 0) {
+      setExpandedTopic(expandedTopic === topicId ? null : topicId);
+      return;
+    }
+
     setIsTransitioning(true);
     
     setTimeout(() => {
       setCurrentTopic(topicId);
       setBreadcrumbs(prev => [...prev, { id: topicId, title: topicTitle }]);
+      setExpandedTopic(null);
       setIsTransitioning(false);
     }, 300);
   };
@@ -33,6 +43,7 @@ export const AIExplorer = () => {
     setTimeout(() => {
       setCurrentTopic(targetId);
       setBreadcrumbs(prev => prev.slice(0, index + 1));
+      setExpandedTopic(null);
       setIsTransitioning(false);
     }, 300);
   };
@@ -150,7 +161,7 @@ export const AIExplorer = () => {
                     <div 
                       key={subtopic.id}
                       className={cn(
-                        "transition-all duration-300",
+                        "relative transition-all duration-300",
                         !isTransitioning && "animate-fade-in"
                       )}
                       style={{ animationDelay: `${index * 100}ms` }}
@@ -162,14 +173,100 @@ export const AIExplorer = () => {
                         onClick={() => handleTopicClick(subtopic.id, subtopic.title)}
                         hasSubtopics={aiTopics[subtopic.id]?.subtopics?.length > 0}
                       />
+                      
+                      {/* Expanded Detail View */}
+                      {expandedTopic === subtopic.id && aiTopics[subtopic.id] && (
+                        <div className="absolute top-0 left-0 right-0 z-20 bg-black/95 backdrop-blur-xl rounded-3xl border border-cyan-400/50 shadow-2xl p-8 animate-scale-in">
+                          {/* Close button */}
+                          <button
+                            onClick={() => setExpandedTopic(null)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                          >
+                            <X className="w-6 h-6" />
+                          </button>
+                          
+                          {/* Expanded content */}
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-3 mb-6">
+                              <BookOpen className="w-6 h-6 text-cyan-400" />
+                              <h3 className="text-2xl font-bold text-cyan-400 font-mono">
+                                {aiTopics[subtopic.id].title}
+                              </h3>
+                            </div>
+                            
+                            <p className="text-gray-300 text-lg leading-relaxed mb-8">
+                              {aiTopics[subtopic.id].description}
+                            </p>
+                            
+                            {/* Key Concepts */}
+                            {aiTopics[subtopic.id].content && (
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <Code className="w-5 h-5 text-purple-400" />
+                                  <h4 className="text-lg font-semibold text-purple-400 font-mono">
+                                    KEY CONCEPTS & EXAMPLES
+                                  </h4>
+                                </div>
+                                
+                                <div className="grid gap-4">
+                                  {aiTopics[subtopic.id].content?.slice(0, 3).map((item, idx) => (
+                                    <div 
+                                      key={idx} 
+                                      className="bg-gray-900/60 rounded-xl p-4 border border-gray-700/50 hover:border-cyan-400/30 transition-colors"
+                                    >
+                                      <h5 className="font-semibold text-cyan-300 mb-2 text-sm">
+                                        {item.title}
+                                      </h5>
+                                      <p className="text-gray-400 text-sm leading-relaxed">
+                                        {item.description}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                                
+                                {/* Example section for specific topics */}
+                                {subtopic.id === 'q-learning' && (
+                                  <div className="mt-6 p-4 bg-gradient-to-r from-purple-900/30 to-cyan-900/30 rounded-xl border border-purple-400/30">
+                                    <h5 className="text-purple-300 font-semibold mb-2 text-sm">SIMPLE EXAMPLE:</h5>
+                                    <p className="text-gray-300 text-sm">
+                                      Imagine teaching an AI to play a maze game. Q-Learning helps it learn that going right leads to +10 points, 
+                                      while hitting walls gives -5 points. Over time, it builds a "quality table" of best actions for each position.
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {subtopic.id === 'linear-regression' && (
+                                  <div className="mt-6 p-4 bg-gradient-to-r from-green-900/30 to-blue-900/30 rounded-xl border border-green-400/30">
+                                    <h5 className="text-green-300 font-semibold mb-2 text-sm">SIMPLE EXAMPLE:</h5>
+                                    <p className="text-gray-300 text-sm">
+                                      Predicting house prices based on size. If you have data showing 1000 sq ft = $100k, 2000 sq ft = $200k, 
+                                      linear regression finds the line: Price = Size × $100 per sq ft.
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {subtopic.id === 'k-means' && (
+                                  <div className="mt-6 p-4 bg-gradient-to-r from-pink-900/30 to-purple-900/30 rounded-xl border border-pink-400/30">
+                                    <h5 className="text-pink-300 font-semibold mb-2 text-sm">SIMPLE EXAMPLE:</h5>
+                                    <p className="text-gray-300 text-sm">
+                                      Grouping customers by shopping habits. K-means finds 3 groups: budget shoppers, luxury buyers, 
+                                      and frequent purchasers - each cluster represents similar customer behaviors.
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Detailed Content with enhanced styling */}
+              {/* Detailed Content with enhanced spacing */}
               {currentData.content && (
-                <div className="bg-black/60 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-cyan-500/30 relative overflow-hidden">
+                <div className="bg-black/60 backdrop-blur-xl rounded-3xl p-10 shadow-2xl border border-cyan-500/30 relative overflow-hidden mt-16">
                   {/* Background pattern */}
                   <div className="absolute inset-0 opacity-5">
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 via-purple-400 to-pink-400" />
